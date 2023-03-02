@@ -55,9 +55,9 @@ void pre_auton(void) {
   // Example: clearing encoders, setting servo positions, ...
 }
 
-double kP = 0.001;
-double kI = 0.001;
-double kD = 0.001;
+double kP = 0.07;
+double kI = 0.0;
+double kD = 0.11;
 
 double turnkP = 0.001;
 double turnkI = 0.001;
@@ -111,16 +111,14 @@ int drivePID() {
     derivative = error - prevError;
     totalError += error;
 
-    double lateralMotorPower = error * kP + derivative * kD + totalError * kI;
+    double lateralMotorPower = error * kP + totalError * kI;
 
     // Turning PID
-    int turnDifference = turnPosition;
-
-    turnError = desiredTurnValue - turnDifference;
+    turnError = desiredTurnValue - turnPosition;
     turnDerivative = turnError - turnPrevError;
     turnTotalError += turnError;
 
-    double turnMotorPower = turnError * turnkP + turnDerivative * turnkD + turnTotalError * turnkI;
+    double turnMotorPower = turnError * turnkP + turnTotalError * turnkI;
 
     FrontLeft.spin(forward, lateralMotorPower + turnMotorPower, volt);
     BackLeft.spin(forward, lateralMotorPower + turnMotorPower, volt);
@@ -150,8 +148,12 @@ int flywheelPID() {
     flywheelTotalError += flywheelError;
 
     double flywheelMotorPower = flywheelError * flywheelkP + flywheelDerivative * flywheelkD + flywheelTotalError * flywheelkI;
+    if(desiredFlywheelValue == 0)
+    {
+      flywheelMotorPower = 0;
+    }
 
-    Flywheel.spin(forward, 400+flywheelMotorPower, rpm);
+    Flywheel.spin(forward, flywheelMotorPower, rpm);
 
     flywheelPrevError = flywheelError;
     vex::task::sleep(20); 
@@ -272,7 +274,7 @@ void usercontrol(void) {
       desiredFlywheelValue = 400;
     }
     else {
-      Flywheel.stop();
+      desiredFlywheelValue = 0;
     }
 
     Controller1.ButtonUp.pressed(IndexerStartStop);
